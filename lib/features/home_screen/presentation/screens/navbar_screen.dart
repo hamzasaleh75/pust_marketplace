@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quick_store/core/constants/url_images.dart';
 import 'package:quick_store/core/data/mock_data.dart';
 import 'package:quick_store/core/shared/widgets/network_image.dart';
-import 'package:quick_store/features/home_screen/screens/home_screen.dart';
-import 'package:quick_store/features/home_screen/screens/selected_products.dart';
+import 'package:quick_store/features/home_screen/presentation/bloc/home_bloc.dart';
+import 'package:quick_store/features/home_screen/presentation/screens/home_screen.dart';
+import 'package:quick_store/features/home_screen/presentation/screens/selected_products.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NavbarScreen extends StatefulWidget {
@@ -16,12 +18,12 @@ class NavbarScreen extends StatefulWidget {
 
 class _NavbarScreenState extends State<NavbarScreen>
     with TickerProviderStateMixin {
-  final List<MockProduct> selectedProducts = [];
   int currentIndex = 0;
   List<MockProduct> products = MockData.products;
   late TabController tabController = TabController(length: 2, vsync: this);
   @override
   Widget build(BuildContext context) {
+    final bloc = context.read<HomeBloc>();
     return Scaffold(
       appBar: AppBar(
         title: Center(
@@ -137,9 +139,7 @@ class _NavbarScreenState extends State<NavbarScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => SelectedProducts(
-                              selectedProducts: selectedProducts,
-                            ),
+                            builder: (context) => SelectedProducts(),
                           ),
                         ),
                       },
@@ -157,9 +157,7 @@ class _NavbarScreenState extends State<NavbarScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => SelectedProducts(
-                              selectedProducts: selectedProducts,
-                            ),
+                            builder: (context) => SelectedProducts(),
                           ),
                         ),
                       },
@@ -176,9 +174,7 @@ class _NavbarScreenState extends State<NavbarScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => SelectedProducts(
-                              selectedProducts: selectedProducts,
-                            ),
+                            builder: (context) => SelectedProducts(),
                           ),
                         ),
                       },
@@ -223,8 +219,8 @@ class _NavbarScreenState extends State<NavbarScreen>
       ),
 
       body: currentIndex == 0
-          ? HomeScreen(selectedproducts: selectedProducts)
-          : SelectedProducts(selectedProducts: selectedProducts),
+          ? HomeScreen()
+          : SelectedProducts(),
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
@@ -245,13 +241,28 @@ class _NavbarScreenState extends State<NavbarScreen>
             label: 'Proudcuts',
           ),
           BottomNavigationBarItem(
-            icon: Icon(
-              currentIndex == 1
-                  ? Icons.shopping_cart
-                  : Icons.shopping_cart_outlined,
-            ),
-            label: 'Cart',
-          ),
+  icon: BlocBuilder<HomeBloc, HomeState>(
+    builder: (context, state) {
+      final bloc = context.read<HomeBloc>();
+
+      final totalCount = bloc.selectedProducts.fold<int>(
+        0,
+        (sum, product) => sum + product.count,
+      );
+
+      return Badge(
+        isLabelVisible: totalCount > 0,
+        label: Text('$totalCount'),
+        child: Icon(
+          currentIndex == 1
+              ? Icons.shopping_cart
+              : Icons.shopping_cart_outlined,
+        ),
+      );
+    },
+  ),
+  label: 'Cart',
+),
         ],
       ),
       // floatingActionButton: floatingActionButtonWidget(context) ,

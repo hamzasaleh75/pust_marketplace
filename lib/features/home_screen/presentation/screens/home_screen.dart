@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quick_store/core/data/mock_data.dart';
 import 'package:quick_store/core/shared/widgets/search_widget.dart';
-import 'package:quick_store/features/home_screen/widgets/products_card.dart';
+import 'package:quick_store/features/home_screen/presentation/bloc/home_bloc.dart';
+import 'package:quick_store/features/home_screen/presentation/widgets/products_card.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.selectedproducts});
-  final List<MockProduct> selectedproducts;
+  const HomeScreen({super.key,});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  List<MockProduct> products = List.from(MockData.products);
-
   @override
   Widget build(BuildContext context) {
+    final bloc = context.read<HomeBloc>();
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -121,13 +121,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               // ),
               // (child: TabBar(tabs: [Tab(text: 'All',),Tab(text: 'hy',)])),
               CustomSearchWidget(
-                list: products,
+                list: bloc.products,
                 onSearch: (value) {
                   setState(() {
                     if (value.isEmpty) {
-                      products = MockData.products;
+                      bloc.products = MockData.products;
                     } else {
-                      products = value;
+                      bloc.products = value;
                     }
                   });
                 },
@@ -137,8 +137,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ProductsGridView(
-                    products: products,
-                    selectedproducts: widget.selectedproducts,
+                    products:  context.read<HomeBloc>().products,
                     refresh: () {
                       setState(() {});
                     },

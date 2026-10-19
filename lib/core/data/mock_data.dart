@@ -1,4 +1,3 @@
-// Mock product item structure for QuickStore app.
 class MockProduct {
   final String id;
   final String title;
@@ -11,6 +10,7 @@ class MockProduct {
   final String imageUrl;
   bool isFavorite;
   final String badgeText;
+  int count;
 
   MockProduct({
     required this.id,
@@ -24,8 +24,27 @@ class MockProduct {
     required this.imageUrl,
     required this.isFavorite,
     required this.badgeText,
+    this.count = 1,
   });
+
+  MockProduct copyWith({int? count}) {
+    return MockProduct(
+      id: id,
+      title: title,
+      category: category,
+      price: price,
+      oldPrice: oldPrice,
+      rating: rating,
+      reviewCount: reviewCount,
+      discountTag: discountTag,
+      imageUrl: imageUrl,
+      isFavorite: isFavorite,
+      badgeText: badgeText,
+      count: count ?? this.count,
+    );
+  }
 }
+
 
 // Static mock products list.
 class MockData {

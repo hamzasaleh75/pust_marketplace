@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quick_store/core/data/mock_data.dart';
 import 'package:quick_store/core/shared/widgets/network_image.dart';
 import 'package:quick_store/core/theme/app_colors.dart';
+import 'package:quick_store/features/home_screen/presentation/bloc/home_bloc.dart';
 
 class ProudctDetailsScreen extends StatefulWidget {
   final MockProduct product;
-  final void Function() refresh;
   final bool showAdd;
-  final List selectedproducts;
   const ProudctDetailsScreen({
     super.key,
     required this.product,
-    required this.refresh,
-    required this.selectedproducts,
     this.showAdd = false,
   });
 
@@ -26,17 +24,11 @@ class _ProudctDetailsScreenState extends State<ProudctDetailsScreen> {
     text: '1',
   );
   double? totalPrice;
-  ProudctCustamiz? proudctCustamiz;
+  int quantity = 1;
 
   @override
   void initState() {
-    proudctCustamiz = ProudctCustamiz(
-      id: widget.product.id,
-      prColor: Colors.white,
-      count: 1,
-    );
     super.initState();
-    totalPrice = widget.product.price;
   }
 
   @override
@@ -47,6 +39,7 @@ class _ProudctDetailsScreenState extends State<ProudctDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = context.read<HomeBloc>();
     return Scaffold(
       appBar: AppBar(title: Text('Proudct Details')),
       body: Padding(
@@ -128,54 +121,96 @@ class _ProudctDetailsScreenState extends State<ProudctDetailsScreen> {
                 ),
               ),
             ),
+
             if (widget.showAdd)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12.0),
                 child: Row(
-                  spacing: 30,
                   children: [
+                    IconButton(
+                      onPressed: () {
+                        if (quantity > 1) {
+                          setState(() {
+                            quantity--;
+                            totalPrice = widget.product.price * quantity;
+                            _counterController.text = '$quantity';
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+
                     Expanded(
                       child: TextField(
-                        onTapOutside: (event) =>
-                            FocusScope.of(context).unfocus(),
-                        decoration: InputDecoration(
-                          label: Text('Number of Proudcts'),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
                         controller: _counterController,
+                        textAlign: TextAlign.center,
                         keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Quantity',
+                          border: OutlineInputBorder(),
+                        ),
                         onChanged: (value) {
-                          if (value.isEmpty) {
-                            proudctCustamiz?.count = 1;
-                            totalPrice = widget.product.price * 1;
-                          } else {
-                            proudctCustamiz?.count = int.parse(value);
+                          final parsedQuantity = int.tryParse(value);
 
-                            totalPrice =
-                                widget.product.price * int.parse(value);
-                          }
-                          setState(() {});
+                          setState(() {
+                            if (parsedQuantity != null && parsedQuantity > 0) {
+                              quantity = parsedQuantity;
+                              totalPrice = widget.product.price * quantity;
+                            } else if (value.isEmpty) {
+                              totalPrice = 0;
+                            }
+                          });
                         },
                       ),
                     ),
+
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          quantity++;
+                          totalPrice = widget.product.price * quantity;
+                          _counterController.text = '$quantity';
+                        });
+                      },
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
+
+                    const SizedBox(width: 8),
+
                     Expanded(
                       child: Text(
-                        'Toatal price is :\n  $totalPrice JD',
+                        'Total:\n${(totalPrice ?? widget.product.price).toStringAsFixed(2)} JD',
                         textAlign: TextAlign.center,
                       ),
                     ),
                   ],
                 ),
               ),
+
             if (widget.showAdd)
               ElevatedButton.icon(
                 onPressed: () {
-                  // Navigator.of(context).pop(proudctCustamiz);
-                  context.go('/', extra: proudctCustamiz);
+                  final selectedQuantity = int.tryParse( 
+                    _counterController.text,
+                  );
 
-                  widget.refresh();
+                  if (selectedQuantity == null || selectedQuantity < 1) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter a valid quantity'),
+                      ),
+                    );
+                    return;
+                  }
+
+                  bloc.add(
+                    AddProductCartEvent(
+                      product: widget.product,
+                      quantity: selectedQuantity,
+                    ),
+                  );
+
+                  context.go('/');
                 },
 
                 label: Text(
@@ -214,8 +249,8 @@ class _ProudctDetailsScreenState extends State<ProudctDetailsScreen> {
 
       child: Stack(
         children: [
-          CustomNetworImage(url: widget.product.imageUrl,imageHeight: 225,),
-          
+          CustomNetworImage(url: widget.product.imageUrl, imageHeight: 225),
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             child: IconButton(
@@ -223,7 +258,6 @@ class _ProudctDetailsScreenState extends State<ProudctDetailsScreen> {
                 setState(() {
                   widget.product.isFavorite = !widget.product.isFavorite;
                 });
-                widget.refresh();
               },
               padding: EdgeInsets.all(10),
               color: AppColors.red,
@@ -245,16 +279,4 @@ class _ProudctDetailsScreenState extends State<ProudctDetailsScreen> {
       ),
     );
   }
-}
-
-class ProudctCustamiz {
-  String? id;
-  Color? prColor;
-  int? count;
-
-  ProudctCustamiz({
-    required this.id,
-    required this.prColor,
-    required this.count,
-  });
 }
